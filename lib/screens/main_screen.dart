@@ -145,7 +145,7 @@ class _MainScreenState extends State<MainScreen> {
               controller: _bikeIdController,
               decoration: const InputDecoration(
                 labelText: 'Fahrrad-ID eingeben',
-                hintText: 'z.B. 222961',
+                hintText: 'z.B. 221785',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.directions_bike),
               ),
