@@ -61,13 +61,13 @@ class _MainScreenState extends State<MainScreen> {
     try {
       final service = NextbikeApiService();
       _allBikeLocations = await service.fetchBikeLocations();
-      print('Alle Standorte geladen: ${_allBikeLocations.length} Fahrräder');
+      //print('Alle Standorte geladen: ${_allBikeLocations.length} Fahrräder');
       // Nach erfolgreichem Laden, falls noch kein Fahrrad gesucht wurde,
       // bleibt die Karte auf dem initialen Mittelpunkt.
     } catch (e) {
       setState(() {
         _errorMessage = e.toString(); // Fehlermeldung speichern
-        print('Fehler beim Laden der Standorte: $_errorMessage');
+        //print('Fehler beim Laden der Standorte: $_errorMessage');
       });
     } finally {
       setState(() {
@@ -116,13 +116,13 @@ class _MainScreenState extends State<MainScreen> {
           16.0,
         ); // Zoomstufe 16 für gute Detailansicht
 
-        print(
-          'Fahrrad $searchId gefunden: Lat ${_foundBikeLocation!.position.latitude}, Lng ${_foundBikeLocation!.position.longitude}',
-        );
+        // print(
+        //   'Fahrrad $searchId gefunden: Lat ${_foundBikeLocation!.position.latitude}, Lng ${_foundBikeLocation!.position.longitude}',
+        // );
       } else {
         // Fahrrad-ID nicht gefunden
         _errorMessage = 'Fahrrad-ID "$searchId" nicht gefunden.';
-        print('Fahrrad-ID "$searchId" nicht gefunden.');
+        //print('Fahrrad-ID "$searchId" nicht gefunden.');
       }
     });
   }

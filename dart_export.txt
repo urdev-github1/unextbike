@@ -1,5 +1,6 @@
 Verzeichnisstruktur des lib-Ordners:
 
+└── generated/
 └── models/
     └── bike_location.dart
 └── screens/
@@ -185,7 +186,7 @@ Dateiinhalte:
 145:               controller: _bikeIdController,
 146:               decoration: const InputDecoration(
 147:                 labelText: 'Fahrrad-ID eingeben',
-148:                 hintText: 'z.B. 222961',
+148:                 hintText: 'z.B. 221785',
 149:                 border: OutlineInputBorder(),
 150:                 prefixIcon: Icon(Icons.directions_bike),
 151:               ),

@@ -1,0 +1,17 @@
+// .vscode/launch.json
+/// VS Code Debug-Konfigurationsdatei
+/// Festlegung wie die App gestartet wird, wenn "F5" gedrückt wird.
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "NextBike Fahrradsuche", // Anzeigename der Konfiguration im Debug-Menü.
+            "request": "launch", // Startet die App.
+            "type": "dart", // Es handelt sich um eine Flutter-App.
+            // Vor dem Starten der App wird die Task "Generate Build Info" ausgeführt.
+            // Diese ist in tasks.json definiert.
+            "preLaunchTask": "Generate Build Info"
+        }
+        // ... andere Konfigurationen wie "NextBike Fahrradsuche (profile mode)" etc.
+    ]
+}

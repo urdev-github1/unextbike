@@ -61,9 +61,9 @@ class NextbikeApiService {
               }
             }
           } catch (e) {
-            print(
-              'Fehler beim Parsen der Koordinaten oder Bike-ID für ein Place: $e',
-            );
+            // print(
+            //   'Fehler beim Parsen der Koordinaten oder Bike-ID für ein Place: $e',
+            // );
           }
         }
       }

@@ -1,0 +1,21 @@
+// .vscode/tasks.json
+/// Hier werden eigene Build-Informationen definiert.
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            // Bezeichner der Aufgabe
+            "label": "Generate Build Info",
+            // Die Aufgabe wird als Shell-Befehl ausgeführt.
+            "type": "shell",
+            // Führt das Dart-Skript aus, um den Zeitstempel zu aktualisieren
+            "command": "dart run lib/build_info.dart",
+            // Steuerung der Anzeige im Terminal
+            "presentation": {
+                "reveal": "always", // Immer das Terminal anzeigen
+                "panel": "new" // In einem neuen Terminal-Panel ausführen
+            },
+            "problemMatcher": []
+        }
+    ]
+}

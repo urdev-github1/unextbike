@@ -1,0 +1,11 @@
+1. launch.json
+- Definiert, wie das Flutter-Projekt im VS Code gestartet wird.
+- Sorgt mit preLaunchTask, dass vor dem Start automatisch eine Aufgabe ausgeführt wird.
+
+2. tasks.json
+- Enthält die Definition dieser Aufgabe („Generate Build Info“).
+- Führt das Dart-Skript aus, das die Build-Informationen erzeugt.
+
+3. build_info.dart
+- Erzeugt beim Ausführen eine Datei lib/generated/build_info.dart.
+- Schreibt dort einen Zeitstempel (und ggf. weitere Infos) hinein, die du in deiner App nutzen kannst.
