@@ -21,14 +21,21 @@ class _MainScreenState extends State<MainScreen> {
   final TextEditingController _bikeIdController = TextEditingController();
   final MapController _mapController = MapController();
 
+  // Speichert die aktuell gesuchte Fahrrad-ID.
   String _currentSearchBikeId = '';
+  // Flag, das anzeigt, ob Daten geladen werden.
   bool _isLoading = false;
+  // Speichert eine Fehlermeldung, falls ein Fehler auftritt.
   String? _errorMessage;
 
+  // Eine Map, die alle geladenen Fahrradstandorte speichert, indiziert nach Fahrrad-ID.
   Map<String, BikeLocation> _allBikeLocations = {};
+  // Speichert den gefundenen Fahrradstandort nach einer Suche.
   BikeLocation? _foundBikeLocation;
+  // Eine Liste von Markierungen, die auf der Karte angezeigt werden sollen.
   List<Marker> _markers = [];
 
+  // Anfangsposition und Zoomstufe der Karte (z.B. Köln).
   static const LatLng _initialMapCenter = LatLng(50.9381, 6.95778);
   static const double _initialMapZoom = 12.0;
 
@@ -44,13 +51,16 @@ class _MainScreenState extends State<MainScreen> {
     super.dispose();
   }
 
+  /// Lädt alle Fahrradstandorte vom Nextbike API Service.
   Future<void> _loadAllBikeLocations() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
     try {
+      // Initialisiert den Service und lädt die Daten.
       final service = NextbikeApiService();
+      // Ruft die Fahrradstandorte ab und speichert sie.
       _allBikeLocations = await service.fetchBikeLocations();
     } catch (e) {
       setState(() {
@@ -63,31 +73,41 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+  /// Sucht nach dem Fahrrad mit der eingegebenen ID und aktualisiert die Karte.
   void _searchBike() {
     final searchId = _bikeIdController.text.trim();
-    setState(() {
-      _currentSearchBikeId = searchId;
-      _foundBikeLocation = null;
-      _markers = [];
-      _errorMessage = null;
 
+    // Aktualisiert den Zustand der UI.
+    setState(() {
+      _currentSearchBikeId = searchId; // Speichert die gesuchte ID.
+      _foundBikeLocation = null; // Setzt den gefundenen Standort zurück.
+      _markers = []; // Leert die Marker-Liste.
+      _errorMessage = null; // Setzt Fehlermeldungen zurück.
+
+      // Überprüft, ob eine ID eingegeben wurde.
       if (searchId.isEmpty) {
         _errorMessage = 'Bitte geben Sie eine Fahrrad-ID ein.';
         return;
       }
 
+      // Sucht in der geladenen Map nach der Fahrrad-ID.
       if (_allBikeLocations.containsKey(searchId)) {
+        // Wenn gefunden, speichert den Standort und erstellt einen Marker.
         _foundBikeLocation = _allBikeLocations[searchId];
 
+        // Erstellt einen Marker für die gefundene Position.
         _markers = [
           Marker(
+            // Position des gefundenen Fahrrads.
             point: _foundBikeLocation!.position,
             width: 80.0,
             height: 80.0,
+            // Verwendet ein benutzerdefiniertes Icon.
             child: const CustomMarkerIcon(),
           ),
         ];
 
+        // Bewegt die Karte zur gefundenen Position und zoomt heran.
         _mapController.move(_foundBikeLocation!.position, 16.0);
       } else {
         _errorMessage = 'Fahrrad-ID "$searchId" nicht gefunden.';
@@ -95,6 +115,7 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  /// Baut die Benutzeroberfläche des MainScreen auf.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,6 +124,7 @@ class _MainScreenState extends State<MainScreen> {
         backgroundColor: Colors.blueGrey,
         foregroundColor: Colors.white,
         actions: [
+          // Info-Button, der zum AboutScreen navigiert.
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () {
@@ -119,6 +141,7 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Textfeld für die Eingabe der Fahrrad-ID.
             TextField(
               controller: _bikeIdController,
               decoration: const InputDecoration(
@@ -128,9 +151,12 @@ class _MainScreenState extends State<MainScreen> {
                 prefixIcon: Icon(Icons.directions_bike),
               ),
               keyboardType: TextInputType.number,
+              // Ruft _searchBike auf, wenn Enter gedrückt wird.
               onSubmitted: (_) => _searchBike(),
             ),
             const SizedBox(height: 16.0),
+
+            // Schaltfläche zum Suchen eines Fahrrads.
             ElevatedButton.icon(
               onPressed: _isLoading && _allBikeLocations.isEmpty
                   ? null
@@ -158,6 +184,8 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
             const SizedBox(height: 24.0),
+
+            // Anzeige von Ladeindikatoren, Fehlermeldungen oder Suchergebnissen.
             if (_isLoading && _allBikeLocations.isEmpty)
               const Center(child: CircularProgressIndicator())
             else if (_errorMessage != null && !_isLoading)
@@ -191,6 +219,8 @@ class _MainScreenState extends State<MainScreen> {
                 textAlign: TextAlign.center,
               ),
             const SizedBox(height: 24.0),
+
+            // Erweiterter Bereich für die Karte.
             Expanded(
               child: Card(
                 elevation: 4,

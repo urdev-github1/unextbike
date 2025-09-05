@@ -5,7 +5,7 @@ import 'package:intl/intl.dart'; // Für die Datumsformatierung
 
 void main() {
   final now = DateTime.now(); // Aktuelles Datum und Uhrzeit
-  final formattedDate = DateFormat('dd-MM-yyyy / HH:mm:ss').format(now);
+  final formattedDate = DateFormat('dd.MM.yyyy / HH:mm:ss').format(now);
 
   // Inhalt der Dart-Datei mit dem Build-Timestamp
   final content =
