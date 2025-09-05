@@ -1,4 +1,4 @@
-// lib/screens/main_screen.dart
+// ==== lib\screens\main_screen.dart ====
 
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
@@ -6,8 +6,9 @@ import 'package:flutter_map/flutter_map.dart';
 
 import '../services/nextbike_api_service.dart';
 import '../models/bike_location.dart';
-import '../widgets/bike_map.dart'; // Import des neuen BikeMap-Widgets
-import '../widgets/custom_marker_icon.dart'; // Import des neuen CustomMarkerIcon-Widgets
+import '../widgets/bike_map.dart';
+import '../widgets/custom_marker_icon.dart';
+import 'about_screen.dart'; // Import des neuen AboutScreen
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -83,8 +84,7 @@ class _MainScreenState extends State<MainScreen> {
             point: _foundBikeLocation!.position,
             width: 80.0,
             height: 80.0,
-            child:
-                const CustomMarkerIcon(), // Verwendung des ausgelagerten Widgets
+            child: const CustomMarkerIcon(),
           ),
         ];
 
@@ -102,6 +102,17 @@ class _MainScreenState extends State<MainScreen> {
         title: const Text('uNextBike'),
         backgroundColor: Colors.blueGrey,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const AboutScreen()),
+              );
+            },
+            tooltip: 'Über die App',
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -180,8 +191,6 @@ class _MainScreenState extends State<MainScreen> {
                 textAlign: TextAlign.center,
               ),
             const SizedBox(height: 24.0),
-
-            // OpenStreetMap Integration mit dem neuen BikeMap-Widget
             Expanded(
               child: Card(
                 elevation: 4,
@@ -191,7 +200,6 @@ class _MainScreenState extends State<MainScreen> {
                   initialMapCenter: _initialMapCenter,
                   initialMapZoom: _initialMapZoom,
                   markers: _markers,
-                  // Parameter für den Ladezustand und Fehlermeldungen werden an BikeMap übergeben
                   isLoading: _isLoading && _allBikeLocations.isEmpty,
                   errorMessage: _errorMessage,
                 ),
