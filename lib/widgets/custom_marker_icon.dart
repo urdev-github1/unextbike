@@ -8,6 +8,7 @@ class CustomMarkerIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Icon(Icons.location_on, color: Colors.red, size: 40.0);
+    //return const Icon(Icons.location_on, color: Colors.red, size: 40.0);
+    return const Icon(Icons.push_pin, color: Colors.red, size: 40.0);
   }
 }

@@ -4,6 +4,7 @@ Verzeichnisstruktur des lib-Ordners:
 └── models/
     └── bike_location.dart
 └── screens/
+    ├── about_screen.dart
     └── main_screen.dart
 └── services/
     └── nextbike_api_service.dart
@@ -19,419 +20,549 @@ Dateiinhalte:
 
 // ==== lib\models\bike_location.dart ====
 
-// lib/models/bike_location.dart
+ 1: // lib/models/bike_location.dart
+ 2: 
+ 3: import 'package:latlong2/latlong.dart';
+ 4: 
+ 5: /// Repräsentiert den Standort eines Fahrrads mit seiner ID, Breiten- und Längengrad.
+ 6: class BikeLocation {
+ 7:   final String bikeNumber;
+ 8:   final LatLng position;
+ 9: 
+10:   BikeLocation({required this.bikeNumber, required this.position});
+11: 
+12:   @override
+13:   String toString() {
+14:     return 'BikeLocation(bikeNumber: $bikeNumber, position: ${position.latitude}, ${position.longitude})';
+15:   }
+16: }
+17: 
 
-import 'package:latlong2/latlong.dart';
+// ==== lib\screens\about_screen.dart ====
 
-/// Repräsentiert den Standort eines Fahrrads mit seiner ID, Breiten- und Längengrad.
-class BikeLocation {
-  final String bikeNumber;
-  final LatLng position;
-
-  BikeLocation({required this.bikeNumber, required this.position});
-
-  @override
-  String toString() {
-    return 'BikeLocation(bikeNumber: $bikeNumber, position: ${position.latitude}, ${position.longitude})';
-  }
-}
-
+ 1: // ==== lib\screens\about_screen.dart ====
+ 2: 
+ 3: import 'package:flutter/material.dart';
+ 4: import 'package:package_info_plus/package_info_plus.dart';
+ 5: 
+ 6: import '../generated/build_info.dart'; // Import der BuildInfo
+ 7: 
+ 8: class AboutScreen extends StatefulWidget {
+ 9:   const AboutScreen({super.key});
+10: 
+11:   @override
+12:   State<AboutScreen> createState() => _AboutScreenState();
+13: }
+14: 
+15: class _AboutScreenState extends State<AboutScreen> {
+16:   PackageInfo? _packageInfo;
+17: 
+18:   @override
+19:   void initState() {
+20:     super.initState();
+21:     _loadPackageInfo();
+22:   }
+23: 
+24:   Future<void> _loadPackageInfo() async {
+25:     final info = await PackageInfo.fromPlatform();
+26:     setState(() {
+27:       _packageInfo = info;
+28:     });
+29:   }
+30: 
+31:   Widget _buildSectionTitle(BuildContext context, String title) {
+32:     return Padding(
+33:       padding: const EdgeInsets.only(
+34:         top: 24.0,
+35:         bottom: 8.0,
+36:         left: 16.0,
+37:         right: 16.0,
+38:       ),
+39:       child: Text(
+40:         title,
+41:         style: Theme.of(
+42:           context,
+43:         ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+44:       ),
+45:     );
+46:   }
+47: 
+48:   @override
+49:   Widget build(BuildContext context) {
+50:     return Scaffold(
+51:       appBar: AppBar(
+52:         title: const Text('Über die App'),
+53:         backgroundColor: Colors.blueGrey,
+54:         foregroundColor: Colors.white,
+55:       ),
+56:       body: _packageInfo == null
+57:           ? const Center(child: CircularProgressIndicator())
+58:           : ListView(
+59:               children: [
+60:                 _buildSectionTitle(context, 'Über die App'),
+61:                 Card(
+62:                   margin: const EdgeInsets.symmetric(
+63:                     horizontal: 16.0,
+64:                     vertical: 8.0,
+65:                   ),
+66:                   child: Column(
+67:                     children: [
+68:                       ListTile(
+69:                         leading: const Icon(Icons.info_outline),
+70:                         title: const Text('App-Version'),
+71:                         subtitle: Text(
+72:                           '${_packageInfo!.version}+${_packageInfo!.buildNumber}',
+73:                         ),
+74:                       ),
+75:                       ListTile(
+76:                         leading: const Icon(Icons.build_circle_outlined),
+77:                         title: const Text('Build-Zeitpunkt'),
+78:                         subtitle: const Text(BuildInfo.buildTimestamp),
+79:                       ),
+80:                     ],
+81:                   ),
+82:                 ),
+83:                 // Hier könnten weitere Sektionen oder Informationen folgen
+84:               ],
+85:             ),
+86:     );
+87:   }
+88: }
+89: 
 
 // ==== lib\screens\main_screen.dart ====
 
-// lib/screens/main_screen.dart
-
-import 'package:flutter/material.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:flutter_map/flutter_map.dart';
-
-import '../services/nextbike_api_service.dart';
-import '../models/bike_location.dart';
-import '../widgets/bike_map.dart'; // Import des neuen BikeMap-Widgets
-import '../widgets/custom_marker_icon.dart'; // Import des neuen CustomMarkerIcon-Widgets
-
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
-
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> {
-  final TextEditingController _bikeIdController = TextEditingController();
-  final MapController _mapController = MapController();
-
-  String _currentSearchBikeId = '';
-  bool _isLoading = false;
-  String? _errorMessage;
-
-  Map<String, BikeLocation> _allBikeLocations = {};
-  BikeLocation? _foundBikeLocation;
-  List<Marker> _markers = [];
-
-  static const LatLng _initialMapCenter = LatLng(50.9381, 6.95778);
-  static const double _initialMapZoom = 12.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAllBikeLocations();
-  }
-
-  @override
-  void dispose() {
-    _bikeIdController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadAllBikeLocations() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-    try {
-      final service = NextbikeApiService();
-      _allBikeLocations = await service.fetchBikeLocations();
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _searchBike() {
-    final searchId = _bikeIdController.text.trim();
-    setState(() {
-      _currentSearchBikeId = searchId;
-      _foundBikeLocation = null;
-      _markers = [];
-      _errorMessage = null;
-
-      if (searchId.isEmpty) {
-        _errorMessage = 'Bitte geben Sie eine Fahrrad-ID ein.';
-        return;
-      }
-
-      if (_allBikeLocations.containsKey(searchId)) {
-        _foundBikeLocation = _allBikeLocations[searchId];
-
-        _markers = [
-          Marker(
-            point: _foundBikeLocation!.position,
-            width: 80.0,
-            height: 80.0,
-            child:
-                const CustomMarkerIcon(), // Verwendung des ausgelagerten Widgets
-          ),
-        ];
-
-        _mapController.move(_foundBikeLocation!.position, 16.0);
-      } else {
-        _errorMessage = 'Fahrrad-ID "$searchId" nicht gefunden.';
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('uNextBike'),
-        backgroundColor: Colors.blueGrey,
-        foregroundColor: Colors.white,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _bikeIdController,
-              decoration: const InputDecoration(
-                labelText: 'Fahrrad-ID eingeben',
-                hintText: 'z.B. 221785',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.directions_bike),
-              ),
-              keyboardType: TextInputType.number,
-              onSubmitted: (_) => _searchBike(),
-            ),
-            const SizedBox(height: 16.0),
-            ElevatedButton.icon(
-              onPressed: _isLoading && _allBikeLocations.isEmpty
-                  ? null
-                  : _searchBike,
-              icon: _isLoading && _allBikeLocations.isEmpty
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Icon(Icons.search),
-              label: Text(
-                _isLoading && _allBikeLocations.isEmpty
-                    ? 'Lade Daten...'
-                    : 'Fahrrad suchen',
-              ),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12.0),
-                backgroundColor: Colors.blueAccent,
-                foregroundColor: Colors.white,
-                textStyle: const TextStyle(fontSize: 18),
-              ),
-            ),
-            const SizedBox(height: 24.0),
-            if (_isLoading && _allBikeLocations.isEmpty)
-              const Center(child: CircularProgressIndicator())
-            else if (_errorMessage != null && !_isLoading)
-              Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 16),
-                textAlign: TextAlign.center,
-              )
-            else if (_foundBikeLocation != null)
-              Column(
-                children: [
-                  const Text(
-                    'Fahrrad gefunden!',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    'ID: ${_foundBikeLocation!.bikeNumber}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  Text(
-                    'Position: Lat ${_foundBikeLocation!.position.latitude}, Lng ${_foundBikeLocation!.position.longitude}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ],
-              )
-            else if (_allBikeLocations.isNotEmpty &&
-                _currentSearchBikeId.isEmpty)
-              const Text(
-                'Geben Sie eine Fahrrad-ID ein, um den Standort auf der Karte zu finden.',
-                style: TextStyle(fontSize: 16),
-                textAlign: TextAlign.center,
-              ),
-            const SizedBox(height: 24.0),
-
-            // OpenStreetMap Integration mit dem neuen BikeMap-Widget
-            Expanded(
-              child: Card(
-                elevation: 4,
-                clipBehavior: Clip.antiAlias,
-                child: BikeMap(
-                  mapController: _mapController,
-                  initialMapCenter: _initialMapCenter,
-                  initialMapZoom: _initialMapZoom,
-                  markers: _markers,
-                  // Parameter für den Ladezustand und Fehlermeldungen werden an BikeMap übergeben
-                  isLoading: _isLoading && _allBikeLocations.isEmpty,
-                  errorMessage: _errorMessage,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
+  1: // ==== lib\screens\main_screen.dart ====
+  2: 
+  3: import 'package:flutter/material.dart';
+  4: import 'package:latlong2/latlong.dart';
+  5: import 'package:flutter_map/flutter_map.dart';
+  6: 
+  7: import '../services/nextbike_api_service.dart';
+  8: import '../models/bike_location.dart';
+  9: import '../widgets/bike_map.dart';
+ 10: import '../widgets/custom_marker_icon.dart';
+ 11: import 'about_screen.dart'; // Import des neuen AboutScreen
+ 12: 
+ 13: class MainScreen extends StatefulWidget {
+ 14:   const MainScreen({super.key});
+ 15: 
+ 16:   @override
+ 17:   State<MainScreen> createState() => _MainScreenState();
+ 18: }
+ 19: 
+ 20: class _MainScreenState extends State<MainScreen> {
+ 21:   final TextEditingController _bikeIdController = TextEditingController();
+ 22:   final MapController _mapController = MapController();
+ 23: 
+ 24:   // Speichert die aktuell gesuchte Fahrrad-ID.
+ 25:   String _currentSearchBikeId = '';
+ 26:   // Flag, das anzeigt, ob Daten geladen werden.
+ 27:   bool _isLoading = false;
+ 28:   // Speichert eine Fehlermeldung, falls ein Fehler auftritt.
+ 29:   String? _errorMessage;
+ 30: 
+ 31:   // Eine Map, die alle geladenen Fahrradstandorte speichert, indiziert nach Fahrrad-ID.
+ 32:   Map<String, BikeLocation> _allBikeLocations = {};
+ 33:   // Speichert den gefundenen Fahrradstandort nach einer Suche.
+ 34:   BikeLocation? _foundBikeLocation;
+ 35:   // Eine Liste von Markierungen, die auf der Karte angezeigt werden sollen.
+ 36:   List<Marker> _markers = [];
+ 37: 
+ 38:   // Anfangsposition und Zoomstufe der Karte (z.B. Köln).
+ 39:   static const LatLng _initialMapCenter = LatLng(50.9381, 6.95778);
+ 40:   static const double _initialMapZoom = 12.0;
+ 41: 
+ 42:   @override
+ 43:   void initState() {
+ 44:     super.initState();
+ 45:     _loadAllBikeLocations();
+ 46:   }
+ 47: 
+ 48:   @override
+ 49:   void dispose() {
+ 50:     _bikeIdController.dispose();
+ 51:     super.dispose();
+ 52:   }
+ 53: 
+ 54:   /// Lädt alle Fahrradstandorte vom Nextbike API Service.
+ 55:   Future<void> _loadAllBikeLocations() async {
+ 56:     setState(() {
+ 57:       _isLoading = true;
+ 58:       _errorMessage = null;
+ 59:     });
+ 60:     try {
+ 61:       // Initialisiert den Service und lädt die Daten.
+ 62:       final service = NextbikeApiService();
+ 63:       // Ruft die Fahrradstandorte ab und speichert sie.
+ 64:       _allBikeLocations = await service.fetchBikeLocations();
+ 65:     } catch (e) {
+ 66:       setState(() {
+ 67:         _errorMessage = e.toString();
+ 68:       });
+ 69:     } finally {
+ 70:       setState(() {
+ 71:         _isLoading = false;
+ 72:       });
+ 73:     }
+ 74:   }
+ 75: 
+ 76:   /// Sucht nach dem Fahrrad mit der eingegebenen ID und aktualisiert die Karte.
+ 77:   void _searchBike() {
+ 78:     final searchId = _bikeIdController.text.trim();
+ 79: 
+ 80:     // Aktualisiert den Zustand der UI.
+ 81:     setState(() {
+ 82:       _currentSearchBikeId = searchId; // Speichert die gesuchte ID.
+ 83:       _foundBikeLocation = null; // Setzt den gefundenen Standort zurück.
+ 84:       _markers = []; // Leert die Marker-Liste.
+ 85:       _errorMessage = null; // Setzt Fehlermeldungen zurück.
+ 86: 
+ 87:       // Überprüft, ob eine ID eingegeben wurde.
+ 88:       if (searchId.isEmpty) {
+ 89:         _errorMessage = 'Bitte geben Sie eine Fahrrad-ID ein.';
+ 90:         return;
+ 91:       }
+ 92: 
+ 93:       // Sucht in der geladenen Map nach der Fahrrad-ID.
+ 94:       if (_allBikeLocations.containsKey(searchId)) {
+ 95:         // Wenn gefunden, speichert den Standort und erstellt einen Marker.
+ 96:         _foundBikeLocation = _allBikeLocations[searchId];
+ 97: 
+ 98:         // Erstellt einen Marker für die gefundene Position.
+ 99:         _markers = [
+100:           Marker(
+101:             // Position des gefundenen Fahrrads.
+102:             point: _foundBikeLocation!.position,
+103:             width: 80.0,
+104:             height: 80.0,
+105:             // Verwendet ein benutzerdefiniertes Icon.
+106:             child: const CustomMarkerIcon(),
+107:           ),
+108:         ];
+109: 
+110:         // Bewegt die Karte zur gefundenen Position und zoomt heran.
+111:         _mapController.move(_foundBikeLocation!.position, 16.0);
+112:       } else {
+113:         _errorMessage = 'Fahrrad-ID "$searchId" nicht gefunden.';
+114:       }
+115:     });
+116:   }
+117: 
+118:   /// Baut die Benutzeroberfläche des MainScreen auf.
+119:   @override
+120:   Widget build(BuildContext context) {
+121:     return Scaffold(
+122:       appBar: AppBar(
+123:         title: const Text('uNextBike'),
+124:         backgroundColor: Colors.blueGrey,
+125:         foregroundColor: Colors.white,
+126:         actions: [
+127:           // Info-Button, der zum AboutScreen navigiert.
+128:           IconButton(
+129:             icon: const Icon(Icons.info_outline),
+130:             onPressed: () {
+131:               Navigator.of(context).push(
+132:                 MaterialPageRoute(builder: (context) => const AboutScreen()),
+133:               );
+134:             },
+135:             tooltip: 'Über die App',
+136:           ),
+137:         ],
+138:       ),
+139:       body: Padding(
+140:         padding: const EdgeInsets.all(16.0),
+141:         child: Column(
+142:           crossAxisAlignment: CrossAxisAlignment.stretch,
+143:           children: [
+144:             // Textfeld für die Eingabe der Fahrrad-ID.
+145:             TextField(
+146:               controller: _bikeIdController,
+147:               decoration: const InputDecoration(
+148:                 labelText: 'Fahrrad-ID eingeben',
+149:                 hintText: 'z.B. 221785',
+150:                 border: OutlineInputBorder(),
+151:                 prefixIcon: Icon(Icons.directions_bike),
+152:               ),
+153:               keyboardType: TextInputType.number,
+154:               // Ruft _searchBike auf, wenn Enter gedrückt wird.
+155:               onSubmitted: (_) => _searchBike(),
+156:             ),
+157:             const SizedBox(height: 16.0),
+158: 
+159:             // Schaltfläche zum Suchen eines Fahrrads.
+160:             ElevatedButton.icon(
+161:               onPressed: _isLoading && _allBikeLocations.isEmpty
+162:                   ? null
+163:                   : _searchBike,
+164:               icon: _isLoading && _allBikeLocations.isEmpty
+165:                   ? const SizedBox(
+166:                       width: 20,
+167:                       height: 20,
+168:                       child: CircularProgressIndicator(
+169:                         strokeWidth: 2,
+170:                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+171:                       ),
+172:                     )
+173:                   : const Icon(Icons.search),
+174:               label: Text(
+175:                 _isLoading && _allBikeLocations.isEmpty
+176:                     ? 'Lade Daten...'
+177:                     : 'Fahrrad suchen',
+178:               ),
+179:               style: ElevatedButton.styleFrom(
+180:                 padding: const EdgeInsets.symmetric(vertical: 12.0),
+181:                 backgroundColor: Colors.blueAccent,
+182:                 foregroundColor: Colors.white,
+183:                 textStyle: const TextStyle(fontSize: 18),
+184:               ),
+185:             ),
+186:             const SizedBox(height: 24.0),
+187: 
+188:             // Anzeige von Ladeindikatoren, Fehlermeldungen oder Suchergebnissen.
+189:             if (_isLoading && _allBikeLocations.isEmpty)
+190:               const Center(child: CircularProgressIndicator())
+191:             else if (_errorMessage != null && !_isLoading)
+192:               Text(
+193:                 _errorMessage!,
+194:                 style: const TextStyle(color: Colors.red, fontSize: 16),
+195:                 textAlign: TextAlign.center,
+196:               )
+197:             else if (_foundBikeLocation != null)
+198:               Column(
+199:                 children: [
+200:                   const Text(
+201:                     'Fahrrad gefunden!',
+202:                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+203:                   ),
+204:                   Text(
+205:                     'ID: ${_foundBikeLocation!.bikeNumber}',
+206:                     style: const TextStyle(fontSize: 16),
+207:                   ),
+208:                   Text(
+209:                     'Position: Lat ${_foundBikeLocation!.position.latitude}, Lng ${_foundBikeLocation!.position.longitude}',
+210:                     style: const TextStyle(fontSize: 16),
+211:                   ),
+212:                 ],
+213:               )
+214:             else if (_allBikeLocations.isNotEmpty &&
+215:                 _currentSearchBikeId.isEmpty)
+216:               const Text(
+217:                 'Geben Sie eine Fahrrad-ID ein, um den Standort auf der Karte zu finden.',
+218:                 style: TextStyle(fontSize: 16),
+219:                 textAlign: TextAlign.center,
+220:               ),
+221:             const SizedBox(height: 24.0),
+222: 
+223:             // Erweiterter Bereich für die Karte.
+224:             Expanded(
+225:               child: Card(
+226:                 elevation: 4,
+227:                 clipBehavior: Clip.antiAlias,
+228:                 child: BikeMap(
+229:                   mapController: _mapController,
+230:                   initialMapCenter: _initialMapCenter,
+231:                   initialMapZoom: _initialMapZoom,
+232:                   markers: _markers,
+233:                   isLoading: _isLoading && _allBikeLocations.isEmpty,
+234:                   errorMessage: _errorMessage,
+235:                 ),
+236:               ),
+237:             ),
+238:           ],
+239:         ),
+240:       ),
+241:     );
+242:   }
+243: }
+244: 
 
 // ==== lib\services\nextbike_api_service.dart ====
 
-// lib/services/nextbike_api_service.dart
-
-import 'package:http/http.dart' as http;
-import 'package:xml/xml.dart';
-import 'package:latlong2/latlong.dart';
-import '../models/bike_location.dart'; // Import des neuen Modells
-
-/// Ein Service zum Abrufen und Parsen von Next-Bike-Daten.
-class NextbikeApiService {
-  final String _apiUrl =
-      'https://api.nextbike.net/maps/nextbike-live.xml?city=14';
-
-  /// Ruft die Next-Bike-Daten ab und gibt eine Map von Fahrrad-IDs zu BikeLocation-Objekten zurück.
-  Future<Map<String, BikeLocation>> fetchBikeLocations() async {
-    try {
-      final response = await http.get(Uri.parse(_apiUrl));
-
-      if (response.statusCode == 200) {
-        // Erfolgreiche Antwort, jetzt XML parsen
-        return _parseXmlResponse(response.body);
-      } else {
-        // Fehler bei der API-Anfrage
-        throw Exception(
-          'Fehler beim Laden der Next-Bike Daten: ${response.statusCode}',
-        );
-      }
-    } catch (e) {
-      // Allgemeine Netzwerk- oder andere Fehler abfangen
-      throw Exception('Netzwerk- oder Parsing-Fehler: $e');
-    }
-  }
-
-  /// Parst den XML-String und extrahiert die Fahrradstandorte.
-  Map<String, BikeLocation> _parseXmlResponse(String xmlString) {
-    final document = XmlDocument.parse(xmlString);
-    final Map<String, BikeLocation> bikeLocations = {};
-
-    // Finden des 'city'-Elements
-    final cityElement = document.findAllElements('city').firstOrNull;
-
-    if (cityElement != null) {
-      // Iterieren über alle 'place'-Elemente innerhalb des 'city'-Elements
-      for (final placeElement in cityElement.findAllElements('place')) {
-        final latString = placeElement.getAttribute('lat');
-        final lngString = placeElement.getAttribute('lng');
-
-        if (latString != null && lngString != null) {
-          try {
-            final lat = double.parse(latString);
-            final lng = double.parse(lngString);
-            final placeLatLng = LatLng(lat, lng);
-
-            // Jetzt die 'bike'-Elemente innerhalb dieses 'place' finden
-            for (final bikeElement in placeElement.findAllElements('bike')) {
-              final bikeNumber = bikeElement.getAttribute('number');
-              if (bikeNumber != null && bikeNumber.isNotEmpty) {
-                bikeLocations[bikeNumber] = BikeLocation(
-                  bikeNumber: bikeNumber,
-                  position: placeLatLng,
-                );
-              }
-            }
-          } catch (e) {
-            // print(
-            //   'Fehler beim Parsen der Koordinaten oder Bike-ID für ein Place: $e',
-            // );
-          }
-        }
-      }
-    }
-    return bikeLocations;
-  }
-}
-
+ 1: // lib/services/nextbike_api_service.dart
+ 2: 
+ 3: import 'package:http/http.dart' as http;
+ 4: import 'package:xml/xml.dart';
+ 5: import 'package:latlong2/latlong.dart';
+ 6: import '../models/bike_location.dart'; // Import des neuen Modells
+ 7: 
+ 8: /// Ein Service zum Abrufen und Parsen von Next-Bike-Daten.
+ 9: class NextbikeApiService {
+10:   final String _apiUrl =
+11:       'https://api.nextbike.net/maps/nextbike-live.xml?city=14';
+12: 
+13:   /// Ruft die Next-Bike-Daten ab und gibt eine Map von Fahrrad-IDs zu BikeLocation-Objekten zurück.
+14:   Future<Map<String, BikeLocation>> fetchBikeLocations() async {
+15:     try {
+16:       final response = await http.get(Uri.parse(_apiUrl));
+17: 
+18:       if (response.statusCode == 200) {
+19:         // Erfolgreiche Antwort, jetzt XML parsen
+20:         return _parseXmlResponse(response.body);
+21:       } else {
+22:         // Fehler bei der API-Anfrage
+23:         throw Exception(
+24:           'Fehler beim Laden der Next-Bike Daten: ${response.statusCode}',
+25:         );
+26:       }
+27:     } catch (e) {
+28:       // Allgemeine Netzwerk- oder andere Fehler abfangen
+29:       throw Exception('Netzwerk- oder Parsing-Fehler: $e');
+30:     }
+31:   }
+32: 
+33:   /// Parst den XML-String und extrahiert die Fahrradstandorte.
+34:   Map<String, BikeLocation> _parseXmlResponse(String xmlString) {
+35:     final document = XmlDocument.parse(xmlString);
+36:     final Map<String, BikeLocation> bikeLocations = {};
+37: 
+38:     // Finden des 'city'-Elements
+39:     final cityElement = document.findAllElements('city').firstOrNull;
+40: 
+41:     if (cityElement != null) {
+42:       // Iterieren über alle 'place'-Elemente innerhalb des 'city'-Elements
+43:       for (final placeElement in cityElement.findAllElements('place')) {
+44:         final latString = placeElement.getAttribute('lat');
+45:         final lngString = placeElement.getAttribute('lng');
+46: 
+47:         if (latString != null && lngString != null) {
+48:           try {
+49:             final lat = double.parse(latString);
+50:             final lng = double.parse(lngString);
+51:             final placeLatLng = LatLng(lat, lng);
+52: 
+53:             // Jetzt die 'bike'-Elemente innerhalb dieses 'place' finden
+54:             for (final bikeElement in placeElement.findAllElements('bike')) {
+55:               final bikeNumber = bikeElement.getAttribute('number');
+56:               if (bikeNumber != null && bikeNumber.isNotEmpty) {
+57:                 bikeLocations[bikeNumber] = BikeLocation(
+58:                   bikeNumber: bikeNumber,
+59:                   position: placeLatLng,
+60:                 );
+61:               }
+62:             }
+63:           } catch (e) {
+64:             // print(
+65:             //   'Fehler beim Parsen der Koordinaten oder Bike-ID für ein Place: $e',
+66:             // );
+67:           }
+68:         }
+69:       }
+70:     }
+71:     return bikeLocations;
+72:   }
+73: }
+74: 
 
 // ==== lib\widgets\bike_map.dart ====
 
-// lib/widgets/bike_map.dart
-
-import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
-
-/// Ein Widget, das die OpenStreetMap mit Markern anzeigt.
-/// Es kann auch Ladezustände oder Fehlermeldungen anzeigen.
-class BikeMap extends StatelessWidget {
-  final MapController mapController;
-  final LatLng initialMapCenter;
-  final double initialMapZoom;
-  final List<Marker> markers;
-  final bool
-  isLoading; // Zeigt an, ob die initialen Daten für die Karte geladen werden
-  final String?
-  errorMessage; // Eine Fehlermeldung, die statt der Karte angezeigt werden soll
-
-  const BikeMap({
-    super.key,
-    required this.mapController,
-    required this.initialMapCenter,
-    required this.initialMapZoom,
-    required this.markers,
-    this.isLoading = false,
-    this.errorMessage,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (isLoading) {
-      // Zeigt einen Ladeindikator, wenn die Karte noch initial geladen wird.
-      return const Center(child: CircularProgressIndicator());
-    } else if (errorMessage != null) {
-      // Zeigt eine Fehlermeldung an, wenn ein Fehler beim Laden der Kartendaten auftrat.
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(
-            'Konnte Karte nicht laden aufgrund eines Fehlers: $errorMessage',
-            style: const TextStyle(color: Colors.red, fontSize: 16),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    } else {
-      // Zeigt die FlutterMap an, wenn keine Fehler oder Ladezustände vorliegen.
-      return FlutterMap(
-        mapController: mapController,
-        options: MapOptions(
-          initialCenter: initialMapCenter,
-          initialZoom: initialMapZoom,
-          interactionOptions: const InteractionOptions(
-            flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-          ),
-        ),
-        children: [
-          TileLayer(
-            urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-            userAgentPackageName: 'de.yourcompany.unextbike',
-          ),
-          MarkerLayer(markers: markers),
-        ],
-      );
-    }
-  }
-}
-
+ 1: // lib/widgets/bike_map.dart
+ 2: 
+ 3: import 'package:flutter/material.dart';
+ 4: import 'package:flutter_map/flutter_map.dart';
+ 5: import 'package:latlong2/latlong.dart';
+ 6: 
+ 7: /// Ein Widget, das die OpenStreetMap mit Markern anzeigt.
+ 8: /// Es kann auch Ladezustände oder Fehlermeldungen anzeigen.
+ 9: class BikeMap extends StatelessWidget {
+10:   final MapController mapController;
+11:   final LatLng initialMapCenter;
+12:   final double initialMapZoom;
+13:   final List<Marker> markers;
+14:   final bool
+15:   isLoading; // Zeigt an, ob die initialen Daten für die Karte geladen werden
+16:   final String?
+17:   errorMessage; // Eine Fehlermeldung, die statt der Karte angezeigt werden soll
+18: 
+19:   const BikeMap({
+20:     super.key,
+21:     required this.mapController,
+22:     required this.initialMapCenter,
+23:     required this.initialMapZoom,
+24:     required this.markers,
+25:     this.isLoading = false,
+26:     this.errorMessage,
+27:   });
+28: 
+29:   @override
+30:   Widget build(BuildContext context) {
+31:     if (isLoading) {
+32:       // Zeigt einen Ladeindikator, wenn die Karte noch initial geladen wird.
+33:       return const Center(child: CircularProgressIndicator());
+34:     } else if (errorMessage != null) {
+35:       // Zeigt eine Fehlermeldung an, wenn ein Fehler beim Laden der Kartendaten auftrat.
+36:       return Center(
+37:         child: Padding(
+38:           padding: const EdgeInsets.all(8.0),
+39:           child: Text(
+40:             'Konnte Karte nicht laden aufgrund eines Fehlers: $errorMessage',
+41:             style: const TextStyle(color: Colors.red, fontSize: 16),
+42:             textAlign: TextAlign.center,
+43:           ),
+44:         ),
+45:       );
+46:     } else {
+47:       // Zeigt die FlutterMap an, wenn keine Fehler oder Ladezustände vorliegen.
+48:       return FlutterMap(
+49:         mapController: mapController,
+50:         options: MapOptions(
+51:           initialCenter: initialMapCenter,
+52:           initialZoom: initialMapZoom,
+53:           interactionOptions: const InteractionOptions(
+54:             flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+55:           ),
+56:         ),
+57:         children: [
+58:           TileLayer(
+59:             urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+60:             userAgentPackageName: 'de.yourcompany.unextbike',
+61:           ),
+62:           MarkerLayer(markers: markers),
+63:         ],
+64:       );
+65:     }
+66:   }
+67: }
+68: 
 
 // ==== lib\widgets\custom_marker_icon.dart ====
 
-// lib/widgets/custom_marker_icon.dart
-
-import 'package:flutter/material.dart';
-
-/// Ein benutzerdefiniertes Widget, das als Marker-Icon auf der Karte dient.
-class CustomMarkerIcon extends StatelessWidget {
-  const CustomMarkerIcon({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Icon(Icons.location_on, color: Colors.red, size: 40.0);
-  }
-}
-
+ 1: // lib/widgets/custom_marker_icon.dart
+ 2: 
+ 3: import 'package:flutter/material.dart';
+ 4: 
+ 5: /// Ein benutzerdefiniertes Widget, das als Marker-Icon auf der Karte dient.
+ 6: class CustomMarkerIcon extends StatelessWidget {
+ 7:   const CustomMarkerIcon({super.key});
+ 8: 
+ 9:   @override
+10:   Widget build(BuildContext context) {
+11:     return const Icon(Icons.location_on, color: Colors.red, size: 40.0);
+12:   }
+13: }
+14: 
 
 // ==== lib\main.dart ====
 
-// lib/main.dart
-
-import 'package:flutter/material.dart';
-import 'screens/main_screen.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'uNextBike',
-      home: const MainScreen(),
-    );
-  }
-}
-
+ 1: // lib/main.dart
+ 2: 
+ 3: import 'package:flutter/material.dart';
+ 4: import 'screens/main_screen.dart';
+ 5: 
+ 6: void main() {
+ 7:   runApp(const MyApp());
+ 8: }
+ 9: 
+10: class MyApp extends StatelessWidget {
+11:   const MyApp({super.key});
+12: 
+13:   @override
+14:   Widget build(BuildContext context) {
+15:     return MaterialApp(
+16:       debugShowCheckedModeBanner: false,
+17:       title: 'uNextBike',
+18:       home: const MainScreen(),
+19:     );
+20:   }
+21: }
+22: 

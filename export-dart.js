@@ -10,7 +10,7 @@ const path = require('path');
 // Definiert den Namen der Ausgabedatei, in die die generierten Inhalte geschrieben werden.
 const outputFile = 'dart_export.txt';
 // Schalter zur Steuerung der Zeilennummern: true = mit Zeilennummern, false = ohne Zeilennummern.
-const includeLineNumbers = false; // <-- HIER KANN DER SCHALTER UMGESCHALTET WERDEN
+const includeLineNumbers = true; // <-- HIER KANN DER SCHALTER UMGESCHALTET WERDEN
 
 // ===============================================
 //           GLOBALE VARIABLEN UND PFADE
