@@ -10,7 +10,7 @@ const path = require('path');
 // Definiert den Namen der Ausgabedatei, in die die generierten Inhalte geschrieben werden.
 const outputFile = 'dart_export.txt';
 // Schalter zur Steuerung der Zeilennummern: true = mit Zeilennummern, false = ohne Zeilennummern.
-const includeLineNumbers = true; // <-- HIER KANN DER SCHALTER UMGESCHALTET WERDEN
+const includeLineNumbers = false; // <-- HIER KANN DER SCHALTER UMGESCHALTET WERDEN
 
 // ===============================================
 //           GLOBALE VARIABLEN UND PFADE
@@ -26,8 +26,6 @@ const libDir = path.join(projectRoot, 'lib');
 const excludedFiles = [
     'lib/generated/build_info.dart',
     'lib/build_info.dart',
-    'lib/firebase_options.dart',
-    'lib/models/event.g.dart',
     '.dart_tool/flutter_build/dart_plugin_registrant.dart'
 ].map(file => path.normalize(file)); // Normalisiert jeden Pfad in der Liste für plattformübergreifende Konsistenz.
 
